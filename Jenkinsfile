@@ -31,24 +31,25 @@ pipeline{
             }
         }
 
-        stage('Building and Pushing Docker Image to GCR'){
-            steps{
-                withCredentials([file(credentialsId : 'gcp-key' , variable : 'GOOGLE_APPLICATION_CREDENTIALS')]){
-                    script{
-                        echo 'Building and Pushing Docker Image to GCR.............'
+        stage('Build and Push Docker Image') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    script {
+                        echo 'Authenticating with Google Cloud and pushing Docker image to GCR...'
                         sh '''
-                        export PATH=$PATH:${GCLOUD_PATH}
+                            # Ensure gcloud is available in the PATH
+                            export PATH=$PATH:${GCLOUD_PATH}
 
-                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                            # Authenticate with Google Cloud using the service account
+                            gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                            gcloud config set project ${GCP_PROJECT}
 
-                        gcloud config set project ${GCP_PROJECT}
+                            # Configure Docker to authenticate with GCR
+                            gcloud auth configure-docker --quiet
 
-                        gcloud auth configure-docker --quiet
-
-                        docker build -t gcr.io/${GCP_PROJECT}/ml-project:latest .
-
-                        docker push gcr.io/${GCP_PROJECT}/ml-project:latest 
-
+                            # Build and push the Docker image to both DockerHub and GCR
+                            docker build -t gcr.io/${GCP_PROJECT}/course-testing:latest .
+                            docker push gcr.io/${GCP_PROJECT}/course-testing:latest
                         '''
                     }
                 }
